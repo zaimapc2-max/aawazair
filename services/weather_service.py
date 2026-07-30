@@ -48,6 +48,3 @@ def get_aqi_data(lat: float, lon: float) -> dict:
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
-if __name__ == "__main__":
-    result = get_aqi_data(31.5497, 74.3436)  # Lahore
-    print(result)
