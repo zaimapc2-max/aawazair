@@ -1,5 +1,5 @@
 from flask import Flask,request,jsonify
-from services.weather_service import get_aqi_data
+from services.weather_service import get_aqi_data,geocode_city
 from services.advisory_engine import get_advisory
 from database.database import insert_user, get_user
 from services.advisory_engine import get_advisory
@@ -13,24 +13,24 @@ CITY_COORDS = {
 }
 
 app = Flask(__name__)
-@app.route("/api/aqi",methods = ["GET"])
-def home():
-    city = request.args.get("city",'').strip().lower()
-    
+@app.route('/api/aqi', methods=['GET'])
+def get_aqi():
+    city = request.args.get('city', '').strip()
+
     if not city:
         return jsonify({"error": "City parameter is required"}), 400
 
-    if city not in CITY_COORDS:
-        return jsonify({"error": f"City '{city}' not supported"}), 404
-    
-    lat,lon = CITY_COORDS[city]
-    data = get_aqi_data(lat,lon)
-    
+    location = geocode_city(city)
+    if location is None:
+        return jsonify({"error": f"Could not find city '{city}'"}), 404
+
+    data = get_aqi_data(location['lat'], location['lon'])
     if data is None:
         return jsonify({"error": "Failed to fetch AQI data"}), 502
-    
-    data['city'] = city
-    return jsonify(data)
+
+    data["city"] = location['resolved_name']
+    data["country"] = location['country']
+    return jsonify(data), 200
     
 
 @app.route("/api/advisory",methods = ["POST"])
@@ -52,59 +52,58 @@ def post_advisory():
     result = get_advisory(aqi_category, health_conditions)
     return jsonify(result), 200
         
-@app.rpute("/api/users",methods = ["POST"])
+@app.route('/api/users', methods=['POST'])
 def create_user():
-    body = request.get_json(silent = True)
+    body = request.get_json(silent=True)
     if not body:
-            return jsonify({"error": "Request body must be valid JSON"}), 400
-        
-    name = body.get("name",'').strip().lower()
-    age_group = body.get("age_group",'').strip().lower()
-    health_conditions = body.get("health_conditions",[]).strip().lower()
-    city = body.get('city', '').strip().lower()
-    
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+
+    name = body.get('name', '').strip()
+    age_group = body.get('age_group', '').strip().lower()
+    health_conditions = body.get('health_conditions', [])
+    city = body.get('city', '').strip()
+
     if not name:
         return jsonify({"error": "name is required"}), 400
     if age_group not in ['child', 'adult', 'elderly']:
         return jsonify({"error": "age_group must be one of: child, adult, elderly"}), 400
-    if city not in CITY_COORDS:
-        return jsonify({"error": f"city '{city}' not supported"}), 400
+    if not city:
+        return jsonify({"error": "city is required"}), 400
     if not isinstance(health_conditions, list):
         return jsonify({"error": "health_conditions must be a list"}), 400
 
+    # Validate the city actually resolves to a real place before saving
+    location = geocode_city(city)
+    if location is None:
+        return jsonify({"error": f"Could not find city '{city}'"}), 400
+
     conditions_str = ",".join(health_conditions) if health_conditions else "none"
+    user_id = insert_user(name, age_group, conditions_str, location['resolved_name'])
 
-    user_id = insert_user(name, age_group, conditions_str, city)
-
-    return jsonify({"id": user_id, "message": "User profile created"}), 201
+    return jsonify({"id": user_id, "message": "User profile created", "resolved_city": location['resolved_name']}), 201
 
 
 @app.route('/api/users/<int:user_id>/advisory', methods=['GET'])
 def get_user_advisory(user_id):
     user = get_user(user_id)
-
     if user is None:
         return jsonify({"error": "User not found"}), 404
 
-    city = user['city']
-    lat, lon = CITY_COORDS[city]
+    location = geocode_city(user['city'])
+    if location is None:
+        return jsonify({"error": "Could not resolve saved city"}), 502
 
-    aqi_data = get_aqi_data(lat, lon)
+    aqi_data = get_aqi_data(location['lat'], location['lon'])
     if aqi_data is None:
         return jsonify({"error": "Failed to fetch live AQI data"}), 502
 
     health_conditions = user['health_conditions'].split(",") if user['health_conditions'] != "none" else []
-
     advisory = get_advisory(aqi_data['category'], health_conditions)
 
     return jsonify({
-        "user": {
-            "name": user['name'],
-            "city": city,
-            "health_conditions": health_conditions
-        },
+        "user": {"name": user['name'], "city": user['city'], "health_conditions": health_conditions},
         "current_aqi": aqi_data,
         "advisory": advisory
     }), 200
-
+    
 app.run(debug = True)

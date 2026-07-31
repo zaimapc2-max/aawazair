@@ -48,3 +48,46 @@ def get_aqi_data(lat: float, lon: float) -> dict:
         "timestamp": datetime.now(timezone.utc).isoformat()
     }
     
+# Simple in-memory cache so repeated requests for the same city
+# during your demo/testing don't hit the geocoding API every time
+_geocode_cache = {}
+
+
+def geocode_city(city_name: str) -> dict | None:
+    """
+    Converts a city name into lat/lon using OpenWeatherMap's free Geocoding API.
+    Returns None if the city can't be found or the request fails.
+    """
+    cache_key = city_name.strip().lower()
+    if cache_key in _geocode_cache:
+        return _geocode_cache[cache_key]
+
+    url = "http://api.openweathermap.org/geo/1.0/direct"
+    params = {
+        "q": city_name,
+        "limit": 1,
+        "appid": API_KEY
+    }
+
+    try:
+        response = requests.get(url, params=params, timeout=5)
+        response.raise_for_status()
+    except requests.exceptions.RequestException as e:
+        print(f"Geocoding error: {e}")
+        return None
+
+    results = response.json()
+
+    if not results:
+        return None
+
+    result = {
+        "lat": results[0]["lat"],
+        "lon": results[0]["lon"],
+        "resolved_name": results[0]["name"],
+        "country": results[0].get("country")
+    }
+
+    _geocode_cache[cache_key] = result
+    return result
+
