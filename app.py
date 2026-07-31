@@ -1,5 +1,6 @@
 from flask import Flask,request,jsonify
 from services.weather_service import get_aqi_data
+from services.advisory_engine import get_advisory
 
 CITY_COORDS = {
     "lahore": (31.5497, 74.3436),
@@ -29,4 +30,28 @@ def home():
     data['city'] = city
     return jsonify(data)
     
+
+@app.route("/api/advisory",methods = ["POST"])
+def post_advisory():
+    body = request.get_json(silent = True)
+    
+    if not body:
+        return jsonify({"error": "Request body must be valid JSON"}), 400
+    
+    aqi_category = body.get("aqi_category")
+    health_conditions = body.get("health_conditions",[])
+    
+    if not aqi_category:
+        return jsonify({"error": "aqi_category is required"}), 400
+
+    if not isinstance(health_conditions, list):
+        return jsonify({"error": "health_conditions must be a list"}), 400
+
+    result = get_advisory(aqi_category, health_conditions)
+    return jsonify(result), 200
+        
+
+
+
+
 app.run(debug = True)
