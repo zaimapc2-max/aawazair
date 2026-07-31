@@ -2,7 +2,7 @@ import os
 import requests
 from dotenv import load_dotenv
 from datetime import datetime, timezone
-from aqi_calculator import calculate_aqi_from_pm25
+from services.aqi_calculator import calculate_aqi_from_pm25
 
 load_dotenv()
 
