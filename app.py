@@ -3,15 +3,6 @@ from flask_cors import CORS
 from services.weather_service import get_aqi_data,geocode_city
 from services.advisory_engine import get_advisory
 from database.database import insert_user, get_user
-from services.advisory_engine import get_advisory
-
-CITY_COORDS = {
-    "lahore": (31.5497, 74.3436),
-    "karachi": (24.8607, 67.0011),
-    "islamabad": (33.6844, 73.0479),
-    "faisalabad": (31.4504, 73.1350),
-    "multan": (30.1575, 71.5249),
-}
 
 app = Flask(__name__)
 CORS(app)
@@ -107,5 +98,6 @@ def get_user_advisory(user_id):
         "current_aqi": aqi_data,
         "advisory": advisory
     }), 200
-    
-app.run(debug = True)
+
+if __name__ == "__main__":
+    app.run(debug = True)
