@@ -1,4 +1,5 @@
 from flask import Flask,request,jsonify
+from flask_cors import CORS
 from services.weather_service import get_aqi_data,geocode_city
 from services.advisory_engine import get_advisory
 from database.database import insert_user, get_user
@@ -13,6 +14,7 @@ CITY_COORDS = {
 }
 
 app = Flask(__name__)
+CORS(app)
 @app.route('/api/aqi', methods=['GET'])
 def get_aqi():
     city = request.args.get('city', '').strip()
