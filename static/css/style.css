@@ -8,3 +8,33 @@ body {
     margin: 0 auto;
     padding: 20px;
 }
+
+#aqi-badge {
+    display: inline-block;
+    padding: 16px 24px;
+    border-radius: 12px;
+    color: white;
+    font-weight: bold;
+    text-align: center;
+    margin: 12px 0;
+}
+
+#aqi-number {
+    display: block;
+    font-size: 2.5rem;
+    line-height: 1;
+}
+
+#aqi-category {
+    display: block;
+    font-size: 1rem;
+    margin-top: 4px;
+}
+
+/* AQI category color classes - standard AQI color scale */
+.aqi-good { background-color: #00e400; color: #1a1a1a; }
+.aqi-moderate { background-color: #ffff00; color: #1a1a1a; }
+.aqi-sensitive { background-color: #ff7e00; color: white; }
+.aqi-unhealthy { background-color: #ff0000; color: white; }
+.aqi-very-unhealthy { background-color: #8f3f97; color: white; }
+.aqi-hazardous { background-color: #7e0023; color: white; }

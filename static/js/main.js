@@ -33,6 +33,11 @@ function showAqiResult(data) {
     aqiNumber.textContent = data.aqi_us;
     aqiCategory.textContent = data.category;
     aqiCityLabel.textContent = `${data.city}, ${data.country}`;
+
+    // Reset any previous color class, then apply the correct one
+    const badge = document.getElementById('aqi-badge');
+    badge.className = '';  // clear existing classes
+    badge.classList.add(getAqiColorClass(data.category));
 }
 
 async function fetchAqi(city) {
@@ -49,6 +54,7 @@ async function fetchAqi(city) {
 
         currentAqiData = data;
         showAqiResult(data);
+        loadTrendChart(data.city);   // <-- new line: load the chart for whatever city was just checked
 
     } catch (err) {
         showAqiError('Could not reach the server. Is Flask running?');
@@ -171,3 +177,81 @@ profileForm.addEventListener('submit', (e) => {
 
     createUserAndGetAdvisory(name, ageGroup, conditions, city);
 });
+
+let trendChart = null;  // keep a reference so we can destroy/redraw instead of stacking charts
+
+function getAqiColor(aqi) {
+    if (aqi <= 50) return '#00e400';
+    if (aqi <= 100) return '#ffff00';
+    if (aqi <= 150) return '#ff7e00';
+    if (aqi <= 200) return '#ff0000';
+    if (aqi <= 300) return '#8f3f97';
+    return '#7e0023';
+}
+
+async function loadTrendChart(city) {
+    try {
+        const response = await fetch(`/api/history?city=${encodeURIComponent(city)}`);
+        const data = await response.json();
+
+        if (!response.ok || !data.readings || data.readings.length === 0) {
+            console.log('Not enough history yet to plot a trend chart.');
+            return;
+        }
+
+        const labels = data.readings.map(r => {
+            const date = new Date(r.recorded_at);
+            return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' });
+        });
+        const values = data.readings.map(r => r.aqi_us);
+        const pointColors = values.map(v => getAqiColor(v));
+
+        const ctx = document.getElementById('trend-chart').getContext('2d');
+
+        // If a chart already exists on this canvas, destroy it first -
+        // otherwise Chart.js throws an error trying to reuse the canvas
+        if (trendChart) {
+            trendChart.destroy();
+        }
+
+        trendChart = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: labels,
+                datasets: [{
+                    label: 'AQI (US)',
+                    data: values,
+                    borderColor: '#555',
+                    backgroundColor: 'rgba(100,100,100,0.1)',
+                    pointBackgroundColor: pointColors,
+                    pointRadius: 4,
+                    tension: 0.2
+                }]
+            },
+            options: {
+                responsive: true,
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'AQI (US)' }
+                    }
+                }
+            }
+        });
+
+    } catch (err) {
+        console.error('Failed to load trend chart:', err);
+    }
+}
+
+function getAqiColorClass(category) {
+    const map = {
+        "Good": "aqi-good",
+        "Moderate": "aqi-moderate",
+        "Unhealthy for Sensitive Groups": "aqi-sensitive",
+        "Unhealthy": "aqi-unhealthy",
+        "Very Unhealthy": "aqi-very-unhealthy",
+        "Hazardous": "aqi-hazardous"
+    };
+    return map[category] || "aqi-moderate";  // fallback default
+}
