@@ -1,15 +1,25 @@
-from flask import Flask,request,jsonify
+from flask import Flask, request, jsonify
 from flask_cors import CORS
-from services.weather_service import get_aqi_data,geocode_city
+from services.weather_service import get_aqi_data, geocode_city
 from services.advisory_engine import get_advisory
-from database.database import insert_user, get_user
+from database.database import insert_user, get_user, init_db
+from database.supabase_client import add_tracked_city
+from apscheduler.schedulers.background import BackgroundScheduler
+from scripts.collect_hourly import collect
+import os
 
+
+init_db()
 app = Flask(__name__)
 CORS(app)
+
+scheduler = BackgroundScheduler()
+scheduler.add_job(collect, 'interval', hours=1)
+scheduler.start()
+
 @app.route('/api/aqi', methods=['GET'])
 def get_aqi():
     city = request.args.get('city', '').strip()
-
     if not city:
         return jsonify({"error": "City parameter is required"}), 400
 
@@ -20,6 +30,8 @@ def get_aqi():
     data = get_aqi_data(location['lat'], location['lon'])
     if data is None:
         return jsonify({"error": "Failed to fetch AQI data"}), 502
+
+    add_tracked_city(location['resolved_name'])  # <-- new line
 
     data["city"] = location['resolved_name']
     data["country"] = location['country']
@@ -114,5 +126,6 @@ def method_not_allowed(e):
 def internal_error(e):
     return jsonify({"error": "Internal server error"}), 500
 
-if __name__ == "__main__":
-    app.run(debug = True)
+if __name__ == '__main__':
+    port = int(os.environ.get("PORT", 5000))
+    app.run(host="0.0.0.0", port=port, debug=False)
