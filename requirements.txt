@@ -1,3 +1,4 @@
+APScheduler==3.11.3
 blinker==1.9.0
 certifi==2026.7.22
 cffi==2.1.0
@@ -26,6 +27,7 @@ requests-file==3.0.1
 six==1.17.0
 tldextract==5.3.1
 tzdata==2026.3
+tzlocal==5.4.4
 urllib3==2.7.0
 Werkzeug==3.1.8
 zope.event==6.2
