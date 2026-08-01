@@ -111,6 +111,20 @@ def get_user_advisory(user_id):
         "advisory": advisory
     }), 200
 
+from services.forecast import get_forecast
+
+@app.route('/api/forecast', methods=['GET'])
+def get_forecast_route():
+    city = request.args.get('city', '').strip()
+    if not city:
+        return jsonify({"error": "City parameter is required"}), 400
+
+    location = geocode_city(city)
+    if location is None:
+        return jsonify({"error": f"Could not find city '{city}'"}), 404
+
+    forecast = get_forecast(location['resolved_name'])
+    return jsonify(forecast), 200
     
 @app.errorhandler(404)
 def not_found(e):
