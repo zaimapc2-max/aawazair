@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify
+from flask import Flask, request, jsonify,render_template
 from flask_cors import CORS
 from services.weather_service import get_aqi_data, geocode_city
 from services.advisory_engine import get_advisory
@@ -15,6 +15,11 @@ CORS(app)
 scheduler = BackgroundScheduler()
 scheduler.add_job(collect, 'interval', hours=1)
 scheduler.start()
+
+
+@app.route('/')
+def index():
+    return render_template('index.html')
 
 @app.route('/api/aqi', methods=['GET'])
 def get_aqi():
@@ -124,6 +129,7 @@ def get_forecast_route():
 
     forecast = get_forecast(location['resolved_name'])
     return jsonify(forecast), 200
+
     
 @app.errorhandler(404)
 def not_found(e):
