@@ -10,11 +10,7 @@ PM25_BREAKPOINTS = [
 
 
 def calculate_aqi_from_pm25(pm25: float) -> dict:
-    """
-    Converts a raw PM2.5 concentration (µg/m³) into a US EPA AQI value (0-500)
-    using the standard piecewise linear breakpoint formula.
-    """
-    # Handle out-of-range values (above the table's max breakpoint)
+    
     if pm25 > 500.4:
         return {"aqi_us": 500, "category": "Hazardous"}
 
@@ -29,5 +25,5 @@ def calculate_aqi_from_pm25(pm25: float) -> dict:
                 "category": category
             }
 
-    # Fallback — shouldn't be hit given the range checks above
+   
     return {"aqi_us": None, "category": "Unknown"}

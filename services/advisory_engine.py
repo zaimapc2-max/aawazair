@@ -85,3 +85,5 @@ def get_advisory(aqi_category: str, health_conditions: list) -> dict:
         "risk_score": RISK_SCORE_MAP.get(aqi_category, 3),
         "advisories": advisories
     }
+    
+ 
