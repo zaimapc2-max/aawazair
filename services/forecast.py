@@ -1,7 +1,7 @@
 import pandas as pd
 from database.supabase_client import get_aqi_history
 
-def get_forcast(city:str,min_data_points: int = 12)->dict:
+def get_forecast(city:str,min_data_points: int = 12)->dict:
     
     history = get_aqi_history(city,limit = 500)
     if len(history) < min_data_points:

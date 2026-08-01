@@ -8,7 +8,6 @@ from apscheduler.schedulers.background import BackgroundScheduler
 from scripts.collect_hourly import collect
 import os
 
-
 init_db()
 app = Flask(__name__)
 CORS(app)
