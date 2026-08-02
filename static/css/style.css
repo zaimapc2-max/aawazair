@@ -308,3 +308,65 @@ canvas {
     content: "⚠ ";
     font-weight: 600;
 }
+
+/* ===== Advisory section: the visual centerpiece ===== */
+#advisory-section {
+    background: linear-gradient(135deg, var(--surface) 0%, #f4f8fb 100%);
+    border: 1.5px solid var(--instrument);
+    box-shadow: 0 8px 28px rgba(35, 80, 115, 0.14);
+}
+
+#advisory-section h2 {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+#advisory-section h2::before {
+    content: "◈";
+    color: var(--instrument);
+    font-size: 1rem;
+}
+
+#advisory-result p:first-child {
+    font-size: 1.05rem;
+}
+
+#advisory-result p strong:first-of-type {
+    font-family: "IBM Plex Mono", monospace;
+}
+
+/* Risk score gets its own visual treatment - the second most important number on the page */
+.risk-meter {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin: 14px 0;
+    padding: 12px 14px;
+    background-color: #f4f8fb;
+    border-radius: 8px;
+}
+
+.risk-meter-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.75rem;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--haze);
+}
+
+.risk-dots {
+    display: flex;
+    gap: 4px;
+}
+
+.risk-dot {
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background-color: var(--border);
+}
+
+.risk-dot.filled {
+    background-color: var(--instrument);
+}

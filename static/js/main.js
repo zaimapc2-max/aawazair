@@ -164,11 +164,16 @@ function showAdvisoryResult(data) {
     const advisories = data.advisory.advisories;
 
     let html = `<p><strong>Current AQI in ${data.user.city}:</strong> ${data.current_aqi.aqi_us} (${data.current_aqi.category})</p>`;
-    html += `<p><strong>Risk level for you:</strong> ${risk} / 5</p>`;
+
+    // Risk meter - 5 dots, filled up to the risk score
+    html += `<div class="risk-meter"><span class="risk-meter-label">Risk for you</span><div class="risk-dots">`;
+    for (let i = 1; i <= 5; i++) {
+        html += `<span class="risk-dot${i <= risk ? ' filled' : ''}"></span>`;
+    }
+    html += `</div></div>`;
+
     html += '<ul>';
     advisories.forEach(a => {
-        // Skip showing a "none:" label when there are no specific health conditions -
-        // just show the general advice text on its own, cleaner for that case
         if (a.condition === 'none') {
             html += `<li>${a.advice}</li>`;
         } else {
