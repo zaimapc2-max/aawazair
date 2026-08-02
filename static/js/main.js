@@ -185,6 +185,104 @@ function showAdvisoryResult(data) {
     advisoryResult.innerHTML = html;
 }
 
+// ===== Multi-city comparison =====
+const compareCityInput = document.getElementById('compare-city-input');
+const addCompareBtn = document.getElementById('add-compare-btn');
+const compareError = document.getElementById('compare-error');
+const compareList = document.getElementById('compare-list');
+
+let comparedCities = [];  // array of {city, aqi_us, category, country}
+
+function renderCompareList() {
+    compareList.innerHTML = '';
+
+    comparedCities.forEach((entry, index) => {
+        const card = document.createElement('div');
+        card.className = 'compare-card';
+
+        const numberSpan = document.createElement('span');
+        numberSpan.className = `compare-card-number ${getAqiColorClass(entry.category)}`;
+        numberSpan.textContent = entry.aqi_us;
+
+        card.innerHTML = `
+            <div>
+                <div class="compare-card-city">${entry.city}, ${entry.country}</div>
+                <div class="compare-card-meta">${entry.category}</div>
+            </div>
+        `;
+
+        const readingWrap = document.createElement('div');
+        readingWrap.className = 'compare-card-reading';
+        readingWrap.appendChild(numberSpan);
+
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'compare-card-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.addEventListener('click', () => {
+            comparedCities.splice(index, 1);
+            renderCompareList();
+        });
+        readingWrap.appendChild(removeBtn);
+
+        card.appendChild(readingWrap);
+        compareList.appendChild(card);
+    });
+}
+
+async function addCityToCompare(city) {
+    compareError.classList.add('hidden');
+    addCompareBtn.disabled = true;
+    addCompareBtn.textContent = '...';
+
+    try {
+        const response = await fetch(`/api/aqi?city=${encodeURIComponent(city)}`);
+        const data = await response.json();
+
+        if (!response.ok) {
+            compareError.textContent = data.error || 'Could not fetch that city.';
+            compareError.classList.remove('hidden');
+            return;
+        }
+
+        // Avoid duplicate entries for the same city
+        const alreadyAdded = comparedCities.some(c => c.city === data.city);
+        if (alreadyAdded) {
+            compareError.textContent = `${data.city} is already in your comparison.`;
+            compareError.classList.remove('hidden');
+            return;
+        }
+
+        comparedCities.push({
+            city: data.city,
+            country: data.country,
+            aqi_us: data.aqi_us,
+            category: data.category
+        });
+        renderCompareList();
+        compareCityInput.value = '';
+
+    } catch (err) {
+        compareError.textContent = 'Could not reach the server.';
+        compareError.classList.remove('hidden');
+        console.error(err);
+    } finally {
+        addCompareBtn.disabled = false;
+        addCompareBtn.textContent = 'Add';
+    }
+}
+
+addCompareBtn.addEventListener('click', () => {
+    const city = compareCityInput.value.trim();
+    if (!city) return;
+    addCityToCompare(city);
+});
+
+compareCityInput.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        addCompareBtn.click();
+    }
+});
 
 // ===== Health profile / advisory: fetch logic =====
 async function createUserAndGetAdvisory(name, ageGroup, conditions, city) {
