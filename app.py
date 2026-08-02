@@ -107,6 +107,13 @@ def get_user_advisory(user_id):
         return jsonify({"error": "Failed to fetch live AQI data"}), 502
 
     health_conditions = user['health_conditions'].split(",") if user['health_conditions'] != "none" else []
+
+    # Merge age group into the conditions list, since "elderly" and "child"
+    # are real advisory categories the engine supports - age isn't captured
+    # by the health condition checkboxes alone
+    if user['age_group'] in ['child', 'elderly'] and user['age_group'] not in health_conditions:
+        health_conditions.append(user['age_group'])
+
     advisory = get_advisory(aqi_data['category'], health_conditions)
 
     return jsonify({
@@ -129,6 +136,27 @@ def get_forecast_route():
 
     forecast = get_forecast(location['resolved_name'])
     return jsonify(forecast), 200
+
+from database.supabase_client import get_aqi_history
+
+@app.route('/api/history', methods=['GET'])
+def get_history_route():
+    city = request.args.get('city', '').strip()
+    if not city:
+        return jsonify({"error": "City parameter is required"}), 400
+
+    location = geocode_city(city)
+    if location is None:
+        return jsonify({"error": f"Could not find city '{city}'"}), 404
+
+    history = get_aqi_history(location['resolved_name'], limit=168)  # up to 7 days hourly
+    # Reverse so oldest is first - charts read left-to-right chronologically
+    history.reverse()
+
+    return jsonify({
+        "city": location['resolved_name'],
+        "readings": history
+    }), 200
 
     
 @app.errorhandler(404)
