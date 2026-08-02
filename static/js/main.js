@@ -1,3 +1,4 @@
+// ===== Element references =====
 const checkAqiBtn = document.getElementById('check-aqi-btn');
 const cityInput = document.getElementById('city-input');
 
@@ -8,38 +9,89 @@ const aqiNumber = document.getElementById('aqi-number');
 const aqiCategory = document.getElementById('aqi-category');
 const aqiCityLabel = document.getElementById('aqi-city-label');
 
-// Keep the latest AQI data in memory so other features (advisory, chart)
-// can reuse it without re-fetching
-let currentAqiData = null;
+const profileForm = document.getElementById('profile-form');
+const profileNameInput = document.getElementById('profile-name');
+const profileAgeGroupInput = document.getElementById('profile-age-group');
+const healthConditionsFieldset = document.getElementById('health-conditions');
+const advisorySubmitBtn = profileForm.querySelector('button[type="submit"]');
 
+const advisorySection = document.getElementById('advisory-section');
+const advisoryLoading = document.getElementById('advisory-loading');
+const advisoryError = document.getElementById('advisory-error');
+const advisoryResult = document.getElementById('advisory-result');
+
+let currentAqiData = null;
+let trendChart = null;
+
+
+// ===== AQI check: loading / error / result state functions =====
 function showAqiLoading() {
     aqiLoading.classList.remove('hidden');
     aqiError.classList.add('hidden');
     aqiResult.classList.add('hidden');
+
+    checkAqiBtn.disabled = true;
+    checkAqiBtn.textContent = 'Checking...';
 }
 
 function showAqiError(message) {
     aqiLoading.classList.add('hidden');
     aqiError.classList.remove('hidden');
     aqiResult.classList.add('hidden');
+
+    checkAqiBtn.disabled = false;
+    checkAqiBtn.textContent = 'Check AQI';
+
     aqiError.textContent = message;
 }
+
+function getAqiColorClass(category) {
+    const map = {
+        "Good": "aqi-good",
+        "Moderate": "aqi-moderate",
+        "Unhealthy for Sensitive Groups": "aqi-sensitive",
+        "Unhealthy": "aqi-unhealthy",
+        "Very Unhealthy": "aqi-very-unhealthy",
+        "Hazardous": "aqi-hazardous"
+    };
+    return map[category] || "aqi-moderate";
+}
+
+const GLOW_COLORS = {
+    "Good": "#00b34a",
+    "Moderate": "#d4a600",
+    "Unhealthy for Sensitive Groups": "#e07b00",
+    "Unhealthy": "#d62828",
+    "Very Unhealthy": "#7b2d8e",
+    "Hazardous": "#6e001f"
+};
 
 function showAqiResult(data) {
     aqiLoading.classList.add('hidden');
     aqiError.classList.add('hidden');
     aqiResult.classList.remove('hidden');
 
+    checkAqiBtn.disabled = false;
+    checkAqiBtn.textContent = 'Check AQI';
+
     aqiNumber.textContent = data.aqi_us;
     aqiCategory.textContent = data.category;
     aqiCityLabel.textContent = `${data.city}, ${data.country}`;
 
-    // Reset any previous color class, then apply the correct one
     const badge = document.getElementById('aqi-badge');
-    badge.className = '';  // clear existing classes
+    badge.className = '';
     badge.classList.add(getAqiColorClass(data.category));
+
+    // Feed the live category color into the section (so both the breathing
+    // glow AND the card's left-border accent inherit the same live color)
+    document.getElementById('aqi-display').style.setProperty(
+        '--glow-color',
+        GLOW_COLORS[data.category] || "#235073"
+    );
 }
 
+
+// ===== AQI check: fetch logic =====
 async function fetchAqi(city) {
     showAqiLoading();
 
@@ -54,7 +106,7 @@ async function fetchAqi(city) {
 
         currentAqiData = data;
         showAqiResult(data);
-        loadTrendChart(data.city);   // <-- new line: load the chart for whatever city was just checked
+        loadTrendChart(data.city);
 
     } catch (err) {
         showAqiError('Could not reach the server. Is Flask running?');
@@ -71,19 +123,8 @@ checkAqiBtn.addEventListener('click', () => {
     fetchAqi(city);
 });
 
-// Auto-load Lahore on page load, since it's pre-filled in the input
-fetchAqi(cityInput.value.trim());
 
-const profileForm = document.getElementById('profile-form');
-const profileNameInput = document.getElementById('profile-name');
-const profileAgeGroupInput = document.getElementById('profile-age-group');
-const healthConditionsFieldset = document.getElementById('health-conditions');
-
-const advisorySection = document.getElementById('advisory-section');
-const advisoryLoading = document.getElementById('advisory-loading');
-const advisoryError = document.getElementById('advisory-error');
-const advisoryResult = document.getElementById('advisory-result');
-
+// ===== Health profile / advisory: state functions =====
 function getSelectedConditions() {
     const checkboxes = healthConditionsFieldset.querySelectorAll('input[type="checkbox"]:checked');
     return Array.from(checkboxes).map(cb => cb.value);
@@ -94,12 +135,19 @@ function showAdvisoryLoading() {
     advisoryLoading.classList.remove('hidden');
     advisoryError.classList.add('hidden');
     advisoryResult.classList.add('hidden');
+
+    advisorySubmitBtn.disabled = true;
+    advisorySubmitBtn.textContent = 'Getting advisory...';
 }
 
 function showAdvisoryError(message) {
     advisoryLoading.classList.add('hidden');
     advisoryError.classList.remove('hidden');
     advisoryResult.classList.add('hidden');
+
+    advisorySubmitBtn.disabled = false;
+    advisorySubmitBtn.textContent = 'Get My Advisory';
+
     advisoryError.textContent = message;
 }
 
@@ -108,6 +156,9 @@ function showAdvisoryResult(data) {
     advisoryError.classList.add('hidden');
     advisoryResult.classList.remove('hidden');
 
+    advisorySubmitBtn.disabled = false;
+    advisorySubmitBtn.textContent = 'Get My Advisory';
+
     const risk = data.advisory.risk_score;
     const advisories = data.advisory.advisories;
 
@@ -115,18 +166,25 @@ function showAdvisoryResult(data) {
     html += `<p><strong>Risk level for you:</strong> ${risk} / 5</p>`;
     html += '<ul>';
     advisories.forEach(a => {
-        html += `<li><strong>${a.condition}:</strong> ${a.advice}</li>`;
+        // Skip showing a "none:" label when there are no specific health conditions -
+        // just show the general advice text on its own, cleaner for that case
+        if (a.condition === 'none') {
+            html += `<li>${a.advice}</li>`;
+        } else {
+            html += `<li><strong>${a.condition}:</strong> ${a.advice}</li>`;
+        }
     });
     html += '</ul>';
 
     advisoryResult.innerHTML = html;
 }
 
+
+// ===== Health profile / advisory: fetch logic =====
 async function createUserAndGetAdvisory(name, ageGroup, conditions, city) {
     showAdvisoryLoading();
 
     try {
-        // Step 1: create the user profile
         const createResponse = await fetch('/api/users', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -145,7 +203,6 @@ async function createUserAndGetAdvisory(name, ageGroup, conditions, city) {
             return;
         }
 
-        // Step 2: immediately fetch the personalized advisory using the new user ID
         const advisoryResponse = await fetch(`/api/users/${createData.id}/advisory`);
         const advisoryData = await advisoryResponse.json();
 
@@ -163,12 +220,12 @@ async function createUserAndGetAdvisory(name, ageGroup, conditions, city) {
 }
 
 profileForm.addEventListener('submit', (e) => {
-    e.preventDefault();  // stop the form from doing a full page reload
+    e.preventDefault();
 
     const name = profileNameInput.value.trim();
     const ageGroup = profileAgeGroupInput.value;
     const conditions = getSelectedConditions();
-    const city = cityInput.value.trim();  // reuse the city already entered above
+    const city = cityInput.value.trim();
 
     if (!name || !ageGroup || !city) {
         showAdvisoryError('Please fill in your name, age group, and a city first.');
@@ -178,9 +235,9 @@ profileForm.addEventListener('submit', (e) => {
     createUserAndGetAdvisory(name, ageGroup, conditions, city);
 });
 
-let trendChart = null;  // keep a reference so we can destroy/redraw instead of stacking charts
 
-function getAqiColor(aqi) {
+// ===== Trend chart =====
+function getAqiChartColor(aqi) {
     if (aqi <= 50) return '#00e400';
     if (aqi <= 100) return '#ffff00';
     if (aqi <= 150) return '#ff7e00';
@@ -204,15 +261,15 @@ async function loadTrendChart(city) {
             return date.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric' });
         });
         const values = data.readings.map(r => r.aqi_us);
-        const pointColors = values.map(v => getAqiColor(v));
+        const pointColors = values.map(v => getAqiChartColor(v));
 
         const ctx = document.getElementById('trend-chart').getContext('2d');
 
-        // If a chart already exists on this canvas, destroy it first -
-        // otherwise Chart.js throws an error trying to reuse the canvas
         if (trendChart) {
             trendChart.destroy();
         }
+
+        const chartFont = { family: "'IBM Plex Mono', monospace", size: 11 };
 
         trendChart = new Chart(ctx, {
             type: 'line',
@@ -221,19 +278,43 @@ async function loadTrendChart(city) {
                 datasets: [{
                     label: 'AQI (US)',
                     data: values,
-                    borderColor: '#555',
-                    backgroundColor: 'rgba(100,100,100,0.1)',
+                    borderColor: '#235073',
+                    borderWidth: 2,
+                    backgroundColor: 'rgba(35, 80, 115, 0.06)',
                     pointBackgroundColor: pointColors,
-                    pointRadius: 4,
-                    tension: 0.2
+                    pointBorderColor: '#ffffff',
+                    pointBorderWidth: 1.5,
+                    pointRadius: 5,
+                    pointHoverRadius: 7,
+                    tension: 0.3,
+                    fill: true
                 }]
             },
             options: {
                 responsive: true,
+                plugins: {
+                    legend: {
+                        labels: {
+                            font: chartFont,
+                            color: '#16233F'
+                        }
+                    }
+                },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: { display: true, text: 'AQI (US)' }
+                        title: {
+                            display: true,
+                            text: 'AQI (US)',
+                            font: chartFont,
+                            color: '#6E7A8F'
+                        },
+                        ticks: { font: chartFont, color: '#6E7A8F' },
+                        grid: { color: '#eef1f5' }
+                    },
+                    x: {
+                        ticks: { font: chartFont, color: '#6E7A8F' },
+                        grid: { display: false }
                     }
                 }
             }
@@ -244,14 +325,6 @@ async function loadTrendChart(city) {
     }
 }
 
-function getAqiColorClass(category) {
-    const map = {
-        "Good": "aqi-good",
-        "Moderate": "aqi-moderate",
-        "Unhealthy for Sensitive Groups": "aqi-sensitive",
-        "Unhealthy": "aqi-unhealthy",
-        "Very Unhealthy": "aqi-very-unhealthy",
-        "Hazardous": "aqi-hazardous"
-    };
-    return map[category] || "aqi-moderate";  // fallback default
-}
+
+// ===== Initial load =====
+fetchAqi(cityInput.value.trim());

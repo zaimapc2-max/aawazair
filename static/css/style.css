@@ -3,31 +3,24 @@
 }
 
 :root {
-    /* Palette: Space Cadet / UCLA Blue / Pink Lavender / Cyan Azure / Air Superiority Blue */
-    --color-space-cadet: #102B53;
-    --color-ucla-blue: #50698D;
-    --color-pink-lavender: #CEB5D4;
-    --color-cyan-azure: #4E7AB1;
-    --color-air-superiority: #7D9FC0;
-
-    --color-bg-top: #eef2f8;
-    --color-bg-bottom: #e6e0eb;
-    --color-surface: #ffffff;
-    --color-text: var(--color-space-cadet);
-    --color-text-muted: #5f6b85;
-    --color-primary: var(--color-ucla-blue);
-    --color-primary-dark: var(--color-space-cadet);
-    --color-accent: var(--color-cyan-azure);
-    --color-border: #dde3ee;
+    --dusk: #16233F;
+    --haze: #6E7A8F;
+    --sky: #E4EEF5;
+    --smog: #DCD9E6;
+    --instrument: #235073;
+    --instrument-dark: #17374F;
+    --ember: #E2A34D;
+    --surface: #ffffff;
+    --border: #dbe1ea;
     --radius: 14px;
-    --shadow: 0 4px 16px rgba(16, 43, 83, 0.08);
+    --shadow: 0 4px 20px rgba(22, 35, 63, 0.08);
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui, sans-serif;
-    background: linear-gradient(180deg, var(--color-bg-top) 0%, var(--color-bg-bottom) 100%);
+    font-family: "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+    background: linear-gradient(180deg, var(--sky) 0%, var(--smog) 100%);
     background-attachment: fixed;
-    color: var(--color-text);
+    color: var(--dusk);
     max-width: 600px;
     margin: 0 auto;
     padding: 24px 20px;
@@ -36,51 +29,63 @@ body {
     min-height: 100vh;
 }
 
+header .eyebrow {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--instrument);
+    margin: 0 0 6px 0;
+}
+
 header h1 {
-    font-size: 2.1rem;
-    margin-bottom: 4px;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 2.2rem;
+    font-weight: 700;
+    margin: 0 0 4px 0;
     letter-spacing: -0.02em;
-    color: var(--color-space-cadet);
+    color: var(--dusk);
 }
 
 .tagline {
-    color: var(--color-text-muted);
+    color: var(--haze);
     margin-top: 0;
     margin-bottom: 24px;
 }
 
 section {
-    background-color: var(--color-surface);
+    background-color: var(--surface);
     border-radius: var(--radius);
     padding: 20px;
     margin-bottom: 20px;
     box-shadow: var(--shadow);
-    border: 1px solid rgba(125, 159, 192, 0.2);
+    border: 1px solid var(--border);
 }
 
 section h2 {
+    font-family: "Space Grotesk", sans-serif;
     margin-top: 0;
-    font-size: 1.2rem;
-    color: var(--color-space-cadet);
+    font-size: 1.15rem;
+    color: var(--dusk);
 }
 
 input, select, button {
     font-size: 16px;
     padding: 10px 12px;
     border-radius: 8px;
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border);
     margin: 4px 0;
-    font-family: inherit;
+    font-family: "Inter", sans-serif;
 }
 
 input:focus, select:focus {
     outline: none;
-    border-color: var(--color-accent);
-    box-shadow: 0 0 0 3px rgba(78, 122, 177, 0.15);
+    border-color: var(--ember);
+    box-shadow: 0 0 0 3px rgba(226, 163, 77, 0.18);
 }
 
 button {
-    background-color: var(--color-primary);
+    background-color: var(--instrument);
     color: white;
     border: none;
     cursor: pointer;
@@ -89,24 +94,30 @@ button {
 }
 
 button:hover {
-    background-color: var(--color-primary-dark);
+    background-color: var(--instrument-dark);
 }
 
 button:active {
     transform: translateY(1px);
 }
 
+button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
 fieldset {
-    border: 1px solid var(--color-border);
+    border: 1px solid var(--border);
     border-radius: 8px;
     padding: 12px;
     margin: 12px 0;
-    background-color: rgba(206, 181, 212, 0.08);
 }
 
 legend {
-    color: var(--color-text-muted);
-    font-size: 0.9rem;
+    font-family: "IBM Plex Mono", monospace;
+    color: var(--haze);
+    font-size: 0.78rem;
+    letter-spacing: 0.04em;
     padding: 0 6px;
 }
 
@@ -126,39 +137,125 @@ legend {
     min-width: 150px;
 }
 
-/* AQI badge - kept on the universal AQI color scale, not themed,
-   since these colors carry real meaning independent of site design */
-#aqi-badge {
+/* ===== Instrument readout: the signature element ===== */
+#aqi-display {
+    position: relative;
+    border-left: 4px solid var(--glow-color, var(--border));
+    transition: border-color 0.4s ease;
+}
+
+#aqi-result {
+    position: relative;
+}
+
+.readout-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: var(--haze);
+    margin: 0 0 10px 0;
+}
+
+.glow-wrap {
+    position: relative;
     display: inline-block;
-    padding: 18px 26px;
-    border-radius: 16px;
+    width: 100%;
+}
+
+.glow-wrap::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 340px;
+    height: 340px;
+    transform: translate(-50%, -50%) scale(1);
+    background: radial-gradient(circle, var(--glow-color, var(--instrument)) 0%, transparent 55%);
+    opacity: 0.22;
+    filter: blur(24px);
+    z-index: 0;
+    animation: breathe 4s ease-in-out infinite;
+    pointer-events: none;
+}
+
+@keyframes breathe {
+    0%, 100% { transform: translate(-50%, -50%) scale(0.9); opacity: 0.16; }
+    50% { transform: translate(-50%, -50%) scale(1.05); opacity: 0.26; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .glow-wrap::before {
+        animation: none;
+    }
+}
+
+#aqi-badge {
+    position: relative;
+    z-index: 1;
+    display: inline-block;
+    padding: 22px 30px;
+    border-radius: 18px;
     color: white;
-    font-weight: bold;
     text-align: center;
-    margin: 12px 0;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
+    margin: 8px 0;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.14);
 }
 
 #aqi-number {
     display: block;
-    font-size: 2.5rem;
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
+    font-size: 3rem;
     line-height: 1;
+    font-variant-numeric: tabular-nums;
 }
 
 #aqi-category {
     display: block;
-    font-size: 1rem;
-    margin-top: 4px;
+    font-family: "Space Grotesk", sans-serif;
+    font-size: 0.95rem;
+    margin-top: 6px;
+    font-weight: 500;
 }
 
-.aqi-good { background-color: #00e400; color: #1a1a1a; }
-.aqi-moderate { background-color: #ffff00; color: #1a1a1a; }
-.aqi-sensitive { background-color: #ff7e00; color: white; }
-.aqi-unhealthy { background-color: #ff0000; color: white; }
-.aqi-very-unhealthy { background-color: #8f3f97; color: white; }
-.aqi-hazardous { background-color: #7e0023; color: white; }
+.aqi-good { background-color: #00b34a; }
+.aqi-moderate { background-color: #d4a600; color: #1a1a1a; }
+.aqi-sensitive { background-color: #e07b00; }
+.aqi-unhealthy { background-color: #d62828; }
+.aqi-very-unhealthy { background-color: #7b2d8e; }
+.aqi-hazardous { background-color: #6e001f; }
 
-/* Advisory result list - a small themed accent touch */
+#aqi-city-label {
+    font-family: "IBM Plex Mono", monospace;
+    font-size: 0.85rem;
+    color: var(--haze);
+}
+
+/* ===== Loading state ===== */
+.spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--instrument);
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+    margin-right: 8px;
+    vertical-align: middle;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+.loading-text {
+    color: var(--haze);
+    display: flex;
+    align-items: center;
+}
+
+/* ===== Advisory result ===== */
 #advisory-result ul {
     padding-left: 20px;
 }
@@ -168,7 +265,12 @@ legend {
 }
 
 #advisory-result li strong {
-    color: var(--color-space-cadet);
+    color: var(--dusk);
+}
+
+#advisory-result p strong {
+    font-family: "IBM Plex Mono", monospace;
+    font-weight: 600;
 }
 
 canvas {
@@ -182,33 +284,11 @@ canvas {
     }
 
     #aqi-number {
-        font-size: 2rem;
+        font-size: 2.4rem;
     }
-}
 
-.spinner {
-    display: inline-block;
-    width: 16px;
-    height: 16px;
-    border: 2px solid var(--color-border);
-    border-top-color: var(--color-primary);
-    border-radius: 50%;
-    animation: spin 0.6s linear infinite;
-    margin-right: 8px;
-    vertical-align: middle;
-}
-
-@keyframes spin {
-    to { transform: rotate(360deg); }
-}
-
-.loading-text {
-    color: var(--color-text-muted);
-    display: flex;
-    align-items: center;
-}
-
-button:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
+    .glow-wrap::before {
+        width: 260px;
+        height: 260px;
+    }
 }
