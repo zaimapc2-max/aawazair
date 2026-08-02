@@ -4,12 +4,16 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AawazAir — Personalized Air Quality Advisor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@500;700&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
 
     <header>
+        <p class="eyebrow">Live Air Quality Instrument</p>
         <h1>AawazAir</h1>
         <p class="tagline">Know what today's air actually means for you</p>
     </header>
@@ -25,12 +29,17 @@
 
         <!-- Live AQI display -->
         <section id="aqi-display">
-            <div id="aqi-loading" class="hidden">Loading current air quality...</div>
+            <div id="aqi-loading" class="hidden loading-text">
+                <span class="spinner"></span> Loading current air quality...
+            </div>
             <div id="aqi-error" class="hidden"></div>
             <div id="aqi-result" class="hidden">
-                <div id="aqi-badge">
-                    <span id="aqi-number">--</span>
-                    <span id="aqi-category">--</span>
+                <p class="readout-label">Current Reading</p>
+                <div class="glow-wrap">
+                    <div id="aqi-badge">
+                        <span id="aqi-number">--</span>
+                        <span id="aqi-category">--</span>
+                    </div>
                 </div>
                 <p id="aqi-city-label"></p>
             </div>
@@ -62,16 +71,21 @@
         <!-- Personalized advisory -->
         <section id="advisory-section" class="hidden">
             <h2>Your Personalized Advisory</h2>
-            <div id="advisory-loading" class="hidden">Getting your personalized advisory...</div>
+            <div id="advisory-loading" class="hidden loading-text">
+                <span class="spinner"></span> Getting your personalized advisory...
+            </div>
             <div id="advisory-error" class="hidden"></div>
             <div id="advisory-result"></div>
         </section>
 
         <!-- Trend chart -->
         <section id="trend-section">
-            <h2>7-Day Trend</h2>
-            <canvas id="trend-chart"></canvas>
-        </section>
+    <h2>7-Day Trend</h2>
+    <p id="trend-empty" class="hidden" style="color: var(--haze); font-size: 0.9rem;">
+        Still collecting readings for this city — check back in a few hours to see the trend.
+    </p>
+    <canvas id="trend-chart"></canvas>
+</section>
 
     </main>
 

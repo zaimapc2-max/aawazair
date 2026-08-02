@@ -37,6 +37,7 @@ function showAqiLoading() {
 function showAqiError(message) {
     aqiLoading.classList.add('hidden');
     aqiError.classList.remove('hidden');
+    aqiError.classList.add('error-box');
     aqiResult.classList.add('hidden');
 
     checkAqiBtn.disabled = false;
@@ -139,10 +140,10 @@ function showAdvisoryLoading() {
     advisorySubmitBtn.disabled = true;
     advisorySubmitBtn.textContent = 'Getting advisory...';
 }
-
 function showAdvisoryError(message) {
     advisoryLoading.classList.add('hidden');
     advisoryError.classList.remove('hidden');
+    advisoryError.classList.add('error-box');
     advisoryResult.classList.add('hidden');
 
     advisorySubmitBtn.disabled = false;
@@ -247,14 +248,21 @@ function getAqiChartColor(aqi) {
 }
 
 async function loadTrendChart(city) {
+    const emptyMsg = document.getElementById('trend-empty');
+    const canvas = document.getElementById('trend-chart');
+
     try {
         const response = await fetch(`/api/history?city=${encodeURIComponent(city)}`);
         const data = await response.json();
 
         if (!response.ok || !data.readings || data.readings.length === 0) {
-            console.log('Not enough history yet to plot a trend chart.');
+            emptyMsg.classList.remove('hidden');
+            canvas.classList.add('hidden');
             return;
         }
+
+        emptyMsg.classList.add('hidden');
+        canvas.classList.remove('hidden');
 
         const labels = data.readings.map(r => {
             const date = new Date(r.recorded_at);
@@ -263,7 +271,7 @@ async function loadTrendChart(city) {
         const values = data.readings.map(r => r.aqi_us);
         const pointColors = values.map(v => getAqiChartColor(v));
 
-        const ctx = document.getElementById('trend-chart').getContext('2d');
+        const ctx = canvas.getContext('2d');
 
         if (trendChart) {
             trendChart.destroy();
@@ -293,22 +301,12 @@ async function loadTrendChart(city) {
             options: {
                 responsive: true,
                 plugins: {
-                    legend: {
-                        labels: {
-                            font: chartFont,
-                            color: '#16233F'
-                        }
-                    }
+                    legend: { labels: { font: chartFont, color: '#16233F' } }
                 },
                 scales: {
                     y: {
                         beginAtZero: true,
-                        title: {
-                            display: true,
-                            text: 'AQI (US)',
-                            font: chartFont,
-                            color: '#6E7A8F'
-                        },
+                        title: { display: true, text: 'AQI (US)', font: chartFont, color: '#6E7A8F' },
                         ticks: { font: chartFont, color: '#6E7A8F' },
                         grid: { color: '#eef1f5' }
                     },
@@ -322,6 +320,9 @@ async function loadTrendChart(city) {
 
     } catch (err) {
         console.error('Failed to load trend chart:', err);
+        emptyMsg.classList.remove('hidden');
+        emptyMsg.textContent = 'Could not load trend data right now.';
+        canvas.classList.add('hidden');
     }
 }
 

@@ -292,3 +292,19 @@ canvas {
         height: 260px;
     }
 }
+
+/* ===== Error states ===== */
+.error-box {
+    background-color: #fdf1f0;
+    border: 1px solid #f3c6c2;
+    border-left: 4px solid #d62828;
+    border-radius: 8px;
+    padding: 14px 16px;
+    color: #8a231f;
+    font-size: 0.92rem;
+}
+
+.error-box::before {
+    content: "⚠ ";
+    font-weight: 600;
+}
