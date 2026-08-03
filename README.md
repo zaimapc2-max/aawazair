@@ -4,6 +4,9 @@
 
 Built for the Girls in STEM Global Hackathon — *Global Challenges, Local Solutions*
 
+🔗 **Live Demo:** https://aawazair-production.up.railway.app
+📦 **Repo:** https://github.com/zaimapc2-max/aawazair
+
 ---
 
 ## The Problem
@@ -16,7 +19,7 @@ AawazAir turns a raw AQI number into a **personalized health advisory** — base
 
 ## Screenshots
 
-*(add screenshots here before submission)*
+*(add 2–3 screenshots here — main AQI reading, personalized advisory card, multi-city comparison)*
 
 ---
 
@@ -27,6 +30,7 @@ AawazAir turns a raw AQI number into a **personalized health advisory** — base
 - **7-day trend chart** built from real, automatically-collected historical data — not simulated
 - **Multi-city comparison** — check several cities side by side
 - **Automatic hourly data collection** via GitHub Actions + Supabase, running independently of whether the app itself is being actively used
+- **Instrument-panel visual design** — a breathing glow behind the live reading, tinted to match the current AQI category
 
 ---
 
@@ -37,6 +41,7 @@ AawazAir turns a raw AQI number into a **personalized health advisory** — base
 - **Databases:** SQLite (local health profiles) + Supabase/Postgres (historical AQI data — chosen so data keeps accumulating 24/7 regardless of whether the local server is running)
 - **Automation:** GitHub Actions scheduled workflow, running hourly to collect live AQI data
 - **Frontend:** HTML, CSS, vanilla JavaScript, Chart.js
+- **Hosting:** Railway
 - **External API:** OpenWeatherMap (Air Pollution + Geocoding)
 
 ---
@@ -45,27 +50,28 @@ AawazAir turns a raw AQI number into a **personalized health advisory** — base
 
 ```
                     ┌─────────────────────┐
-                    │  GitHub Actions     │
-                    │  (runs every hour)  │
-                    └──────────┬──────────┘
+                    │  GitHub Actions      │
+                    │  (runs every hour)   │
+                    └──────────┬───────────┘
                                │
                                ▼
 ┌──────────────┐      ┌───────────────┐      ┌──────────────────┐
-│OpenWeatherMap│◄────►│ Flask Backend │◄────►│Supabase(Postgres)│
-│ (live AQI +  │      │ (app.py)      │      │aqi_history,      │
-│  geocoding)  │      │               │      │ racked_cities    │
-└──────────────┘      └───────┬───────┘      └──────────────────┘
+│ OpenWeatherMap│◄────►│  Flask Backend │◄────►│  Supabase (Postgres)│
+│  (live AQI +  │      │  (app.py)      │      │  aqi_history,       │
+│   geocoding)  │      │  hosted on     │      │  tracked_cities      │
+│               │      │  Railway       │      │                      │
+└──────────────┘      └───────┬────────┘      └──────────────────┘
                                │
                                ▼
                     ┌─────────────────────┐
-                    │  SQLite (local)     │
-                    │  users table only   │
+                    │  SQLite (local)      │
+                    │  users table only     │
                     └─────────────────────┘
                                │
                                ▼
                     ┌─────────────────────┐
-                    │Frontend (HTML/JS)   │
-                    │Chart.js, live badge │
+                    │  Frontend (HTML/JS)   │
+                    │  Chart.js, live badge │
                     └─────────────────────┘
 ```
 
@@ -143,7 +149,9 @@ Visit `http://127.0.0.1:5000`
 
 ## Notes / Lessons Learned
 
-- Supabase tables initially had Row Level Security blocking reads/writes via the anon key; RLS was disabled on `aqi_history` and `tracked_cities`, since this data isn't sensitive (no personal user data lives here — health profiles stay in local SQLite).
+- **Supabase Row Level Security** initially blocked reads/writes via the anon key, with no obvious error message — RLS was disabled on `aqi_history` and `tracked_cities` after tracing an empty result back to it, since this data isn't sensitive (no personal user data lives here — health profiles stay in local SQLite).
+- **A freshly generated OpenWeatherMap API key can take time to activate** — including on a brand-new account — and looks identical to an invalid key until it does. Worth knowing before assuming a key is broken.
+- **`.env` files and CI/CD secrets (e.g. GitHub Actions) are two entirely separate systems** that don't sync automatically — a variable name mismatch between the two caused automated data collection to silently fail for a while.
 - Historical data is genuinely, continuously collected in the background via a GitHub Actions cron job — not simulated or seeded — so the trend chart and forecast feature reflect real conditions and get more accurate the longer the system runs.
 
 ---
@@ -156,126 +164,10 @@ Visit `http://127.0.0.1:5000`
 - School/workplace group dashboards for outdoor activity planning
 - Expand the advisory engine's rule set with input from actual public health professionals
 - Persistent user accounts (currently profiles are created fresh each session)
+- Migrate the Flask dev server to a production WSGI server (e.g. Gunicorn) for a more robust deployment
 
 ---
 
 ## Team
 
 Built solo in 5 days for the Girls in STEM Global Hackathon.
-## API Endpoints
-
-### `GET /api/aqi?city={city_name}`
-Returns live AQI data for any city worldwide (geocoded dynamically).
-
-**Example:** `GET /api/aqi?city=Lahore`
-
-**Response (200):**
-```json
-{
-  "aqi_us": 187,
-  "category": "Unhealthy",
-  "pm25": 62.4,
-  "pm10": 95.1,
-  "no2": 18.3,
-  "so2": 8.7,
-  "co": 450.5,
-  "o3": 45.2,
-  "timestamp": "2026-08-01T05:16:19+00:00",
-  "city": "Lahore",
-  "country": "PK"
-}
-```
-**Errors:** `400` missing city · `404` city not found · `502` upstream API failure
-
----
-
-### `POST /api/advisory`
-Returns a personalized health advisory given an AQI category and health conditions.
-
-**Body:**
-```json
-{
-  "aqi_category": "Unhealthy",
-  "health_conditions": ["asthma", "elderly"]
-}
-```
-
-**Response (200):**
-```json
-{
-  "aqi_category": "Unhealthy",
-  "risk_score": 4,
-  "advisories": [
-    { "condition": "asthma", "advice": "..." },
-    { "condition": "elderly", "advice": "..." }
-  ]
-}
-```
-
----
-
-### `POST /api/users`
-Creates a health profile.
-
-**Body:**
-```json
-{
-  "name": "Aisha",
-  "age_group": "adult",
-  "health_conditions": ["asthma"],
-  "city": "Lahore"
-}
-```
-**Response (201):** `{ "id": 1, "message": "User profile created", "resolved_city": "Lahore" }`
-
----
-
-### `GET /api/users/{id}/advisory`
-**Hero endpoint** — combines a saved profile with live AQI in one call.
-
-**Response (200):**
-```json
-{
-  "user": { "name": "Aisha", "city": "Lahore", "health_conditions": ["asthma"] },
-  "current_aqi": { "aqi_us": 187, "category": "Unhealthy", ... },
-  "advisory": { "risk_score": 4, "advisories": [...] }
-}
-```
-
----
-
-### `GET /api/forecast?city={city_name}`
-Pandas-based trend analysis over historical AQI data.
-
-**Response while data is still accumulating (200):**
-```json
-{
-  "status": "insufficient_data",
-  "message": "Still collecting historical data for Lahore...",
-  "data_points": 2
-}
-```
-
-**Response once enough data exists (200):**
-```json
-{
-  "status": "ok",
-  "trend_direction": "rising",
-  "recent_avg_aqi": 172.3,
-  "worst_hour_of_day": 8,
-  "best_hour_of_day": 14,
-  "current_aqi": 187,
-  "estimated_next_24h_aqi": 191
-}
-```
-
----
-
-## Architecture Notes
-
-- **Local SQLite** (`database/database.py`): stores user health profiles only.
-- **Supabase (Postgres)**: stores `aqi_history` and `tracked_cities` — chosen so historical data keeps accumulating 24/7 via a scheduled job, independent of whether the local dev server is running.
-- **GitHub Actions** (`.github/workflows/collect_aqi.yml`): runs `scripts/collect_hourly.py` every hour, fetching live AQI for all tracked cities and logging it to Supabase — this is what powers the forecast feature with real, not simulated, historical data.
-- Cities are **not hardcoded** — any city a user queries via `/api/aqi` or signs up with is automatically added to `tracked_cities` and starts accumulating history from that point forward.
-
-**🔗 Live Demo:** https://aawazair-production.up.railway.app
