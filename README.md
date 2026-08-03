@@ -277,3 +277,5 @@ Pandas-based trend analysis over historical AQI data.
 - **Supabase (Postgres)**: stores `aqi_history` and `tracked_cities` — chosen so historical data keeps accumulating 24/7 via a scheduled job, independent of whether the local dev server is running.
 - **GitHub Actions** (`.github/workflows/collect_aqi.yml`): runs `scripts/collect_hourly.py` every hour, fetching live AQI for all tracked cities and logging it to Supabase — this is what powers the forecast feature with real, not simulated, historical data.
 - Cities are **not hardcoded** — any city a user queries via `/api/aqi` or signs up with is automatically added to `tracked_cities` and starts accumulating history from that point forward.
+
+**🔗 Live Demo:** https://aawazair-production.up.railway.app
